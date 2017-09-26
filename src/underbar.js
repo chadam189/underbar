@@ -212,24 +212,89 @@
   _.contains = function(collection, target) {
     // TIP: Many iteration problems can be most easily expressed in
     // terms of reduce(). Here's a freebie to demonstrate!
-    return _.reduce(collection, function(wasFound, item) {
-      if (wasFound) {
-        return true;
+    if (Array.isArray(collection)) {
+      return _.reduce(collection, function(wasFound, item) {
+        if (wasFound) {
+          return true;
+        }
+        return item === target;
+      }, false);
+    } else {
+      var wasFound = false;
+      for (var key in collection) {
+        if (collection[key] === target) {
+          wasFound = true;
+        }
       }
-      return item === target;
-    }, false);
+      return wasFound;
+    }
   };
 
 
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    // return _.reduce(collection, function(allTrue, item) {
+    //   if (!allTrue) {
+    //     return false;
+    //   }
+    //   if (iterator(item)) {
+    //     return true;
+    //   } else {
+    //     return false;
+    //   }
+    // });
+
+    if (arguments.length > 1 && collection.length > 0) {
+      // return _.reduce(collection, function(allTrue, item){
+      //   if (allTrue === undefined || allTrue) {
+      //     return iterator(item);
+      //   } else {
+      //     return false;
+      //   }
+      // });
+      var allTrue = true;
+      _.each(collection, function(item) {
+        if (!iterator(item)) {
+          allTrue = false;
+        }
+      });
+      return allTrue;
+    } else if (collection.length === 0) {
+      return true;
+    } else { // if arguments.length is 1, i.e. no iterator function was passed in
+      return _.reduce(collection, function(allTrue, item) {
+        if (allTrue === undefined || allTrue) {
+          return item;
+        }
+        return false;
+      });
+    }
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+
+    if (arguments.length > 1 && collection.length > 0) {
+      var oneIsTrue = false;
+      _.each(collection, function(item) {
+        if (iterator(item)) {
+          oneIsTrue = true;
+        }
+      });
+      return oneIsTrue;
+    } else if (collection.length === 0) {
+      return false;
+    } else { // if arguments.length is 1, i.e. no iterator function was passed in
+      return _.reduce(collection, function(oneIsTrue, item) {
+        if (oneIsTrue === undefined || !oneIsTrue) {
+          return item;
+        }
+        return true;
+      });
+    }
   };
 
 
@@ -252,11 +317,27 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    var result = obj;
+    for (var i = 1; i < arguments.length; i++) {
+      for (var key in arguments[i]) {
+        result[key] = arguments[i][key];
+      }
+    }
+    return result;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    var result = obj;
+    for (var i = 1; i < arguments.length; i++) {
+      for (var key in arguments[i]) {
+        if (result[key] === undefined) {
+          result[key] = arguments[i][key];
+        }
+      }
+    }
+    return result;
   };
 
 
@@ -300,6 +381,30 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    var pastArguments = [];
+    var pastResults = [];
+
+    return function() {
+      var tempArgs = arguments;
+      var index = -1; 
+      _.each(pastArguments, function (currentValue, currentIndex) {
+        if (JSON.stringify(currentValue) === JSON.stringify(tempArgs)) {
+          index = currentIndex;
+        }
+      });
+
+
+      if (index === -1) {
+        // pastArguments.push(arguments);
+        // pastResults.push(func.apply(this, arguments));
+        var tempIndex = pastArguments.length;
+        pastArguments[tempIndex] = arguments;
+        pastResults[tempIndex] = func.apply(this, arguments);
+        return pastResults[tempIndex]
+      } else {
+        return pastResults[index];
+      }
+    };
   };
 
   // Delays a function for the given number of milliseconds, and then calls
